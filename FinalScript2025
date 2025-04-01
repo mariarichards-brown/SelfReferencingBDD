@@ -1,0 +1,450 @@
+echo "# SelfReferencingBDD" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/mariarichards-brown/SelfReferencingBDD.git
+git push -u origin main
+
+rm(list=ls())
+source("functions_v2.R")
+
+# do you want to print the output?
+printFiles <- 1
+
+# cleaning your data (exp1)
+exp1 <- cleaningTaskData_exp1(printFiles)
+e1 <- data.frame(exp="e1",exp1$lf)
+exp1$wf$phq <- NA
+exp1$wf$bis <- NA
+exp1$wf$gad <- NA
+exp1$wf$exp <- "e1"
+
+# cleaning your data (exp2a)
+exp2a <- cleaningTaskData_exp2a(printFiles)
+e2a <- data.frame(exp="e2a",exp2a$lf)
+exp2a$wf$bis <- NA
+exp2a$wf$gad <- NA
+exp2a$wf$exp <- "e2a"
+
+# cleaning your data (exp2b)
+exp2b <- cleaningTaskData_exp2b(printFiles)
+e2b <- data.frame(exp="e2b",exp2b$lf)
+exp2b$wf$bis <- NA
+exp2b$wf$gad <- NA
+exp2b$wf$exp <- "e2b"
+
+
+# cleaning your data (exp3)
+exp3 <- cleaningTaskData_exp3(printFiles)
+e3 <- data.frame(exp="e3",exp3$lf)
+exp3$wf$exp <- "e3"
+
+# Assuming 'e1' is your dataset and 'nTrial' is the column representing the trial number
+
+e1$newBlock <- ceiling(e1$nTrial / 30)
+e3$newBlock <- ceiling(e3$nTrial / 30)
+# combine experiments long format
+lf <- rbind(e1,e3)
+
+# combine experiments wide format
+relCols <- c("exp", "partId","age","sex","bddq","phq","bis","gad")
+wf <- rbind(exp1$wf[,relCols],exp3$wf[,relCols])
+
+# add questionnaires to long format
+lf <- addQuestionnairesToLF(lf,wf)
+
+# sample size before cleaning?
+table(wf$exp); table(wf$exp,wf$sex)
+
+
+
+############################################################################## #
+# removing bad participants, criteria:
+#  - trial level: remove <200ms and >1400
+#  - participant: remove overall correct <65%
+lf <- lf[lf$rt > 200 & lf$rt < 1400,]
+if (!require(dplyr)) {install.packages("dplyr")}; library(dplyr)
+# calculate mean of correct
+temp <- lf %>% group_by(partId) %>%
+  summarise(mCorrect = mean(corr), mRt = mean(rt), n = n())
+# detect bad participatns (<65%)
+temp <- temp$partId[temp$mCorrect < 0.65]
+for (i in 1:length(temp)) {
+  lf <- lf[lf$partId != temp[i],]
+  wf <- wf[wf$partId != temp[i],]
+}
+# manual remove, this participant has only one good trial after above criterion
+lf <- lf[lf$partId != 10446215,] 
+wf <- wf[wf$partId != 10446215,] 
+
+# sample size after cleaning?
+table(wf$exp); table(wf$exp,wf$sex)
+
+# descriptive statistics
+# age
+f_descrContinuous(wf$age[wf$exp == "e1"])
+f_descrContinuous(wf$age[wf$exp == "e2a"])
+f_descrContinuous(wf$age[wf$exp == "e2b"])
+f_descrContinuous(wf$age[wf$exp == "e3"])
+# sex
+f_descrCategorical(wf$sex[wf$exp == "e1"])
+f_descrCategorical(wf$sex[wf$exp == "e2a"])
+f_descrCategorical(wf$sex[wf$exp == "e2b"])
+f_descrCategorical(wf$sex[wf$exp == "e3"])
+# bddq
+f_descrContinuous(wf$bddq[wf$exp == "e1"])
+f_descrContinuous(wf$bddq[wf$exp == "e2a"])
+f_descrContinuous(wf$bddq[wf$exp == "e2b"])
+f_descrContinuous(wf$bddq[wf$exp == "e3"])
+# phq
+f_descrContinuous(wf$phq[wf$exp == "e2a"])
+f_descrContinuous(wf$phq[wf$exp == "e2b"])
+f_descrContinuous(wf$phq[wf$exp == "e3"])
+# bis
+f_descrContinuous(wf$bis[wf$exp == "e3"])
+# gad
+f_descrContinuous(wf$gad[wf$exp == "e3"])
+
+
+
+# # # # printing individual files for fast-dm # # # # ####
+# subj <- unique(lf$partId)
+# nSubj <- length(subj)
+# relCols <- c("match","word","corr","rt")
+# for (i in 1:nSubj) {
+#   temp <- lf[lf$partId == subj[i],]
+#   temp$rt <- temp$rt / 1000 # in seconds
+#   write.table(temp[,relCols],paste0("computational_modelling/ddm/",
+#                                     subj[i],".dat"),
+#               row.names = F, col.names = F)
+# }
+
+library(dplyr)
+
+# Count how many unique participants have a bddq score of 4
+lf %>%
+  filter(bddq == 4) %>%      # Filter for rows where bddq score is 4
+  distinct(partId) %>%       # Keep only unique participants
+  nrow()                     # Count the number of unique participants
+
+temp <- lf[lf$exp=="e1",]
+temp %>%
+  filter(bddq == 4) %>%      # Filter for rows where bddq score is 4
+  distinct(partId) %>%       # Keep only unique participants
+  nrow()  
+
+temp <- lf[lf$exp=="e3",]
+temp %>%
+  filter(bddq == 4) %>%      # Filter for rows where bddq score is 4
+  distinct(partId) %>%       # Keep only unique participants
+  nrow()   
+
+# Count how many unique women have a bddq score of 4
+temp %>%
+  filter(bddq == 4, sex == "Female") %>%  # Filter for BDDQ score of 4 and gender 'Female'
+  distinct(partId) %>%                       # Keep only unique participants
+  nrow()                                     # Count the number of unique participants
+
+
+library(dplyr)
+
+# Make sure to explicitly use dplyr's filter function
+df %>%
+  dplyr::filter(bddq_score %in% c(0, 1, 2, 3, 4)) %>%  # Ensure valid bddq_score values (0-4)
+  group_by(participant_id, experiment, bddq_score) %>%  # Group by participant and experiment
+  tally(name = "count") %>%  # Count occurrences of each score for each participant in each experiment
+  group_by(participant_id, experiment) %>%  # Group by participant and experiment again
+  mutate(proportion = count / sum(count)) %>%  # Calculate the proportion for each score in each experiment
+  select(participant_id, experiment, bddq_score, count, proportion)  # Select relevant columns
+
+# # # # General Graphs # # # #
+if (!require(ggplot2)) {install.packages("ggplot2")}; library(ggplot2)
+ggplot2::ggplot(lf, aes(x=nBlock ,y=corr,col=match)) + 
+  stat_summary() + stat_smooth(method="lm", se=F) + 
+  facet_grid(word ~ exp) + 
+  theme_classic()
+
+ggplot(lf, aes(x = word, y = corr, col = match)) + 
+  stat_summary() + 
+  facet_grid(. ~ exp, labeller = labeller(exp = c("e1" = "E1", "e3" = "E2"))) + 
+  theme_classic() + 
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) + 
+  labs(x = "Word Type", y = "Accuracy", color = "Congruency") + 
+  coord_cartesian(ylim = c(0.75, 1))  # Set y-axis limit to [0.75, 1]
+
+temp <- lf[lf$exp=="e3",]
+
+ggplot(temp, aes(x = word, y = corr, col = match)) + 
+  stat_summary() + 
+  theme_classic() + 
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) + 
+  labs(x = "Word Type", y = "Accuracy", color = "Congruency") + 
+  coord_cartesian(ylim = c(0.75, 1))  # Set y-axis limit to [0.75, 1]
+
+library(ggplot2)
+
+ggplot(temp, aes(x = word, y = rt, shape = match, col = match)) +  # Use shape instead of colour
+  stat_summary(position = position_dodge(0.8), fun.data = "mean_cl_boot") +  # Statistical summary (e.g., mean with CI)
+  theme_classic() +  # Use a classic theme
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),  # Rotate x-axis text
+    axis.title.x = element_text(face = "bold"),  # Bold the X-axis label
+    axis.title.y = element_text(face = "bold"),  # Bold the Y-axis label
+    text = element_text(family = "Times New Roman"),  # Set font to Times New Roman
+    legend.title = element_text(face = "bold"),  # Bold the legend title
+    legend.text = element_text(size = 10),  # Adjust legend text size
+    legend.background = element_rect(fill = "white", color = "black"),  # Box around legend
+    legend.box = "horizontal"  # Horizontal box around the legend (can use "vertical" as well)
+  ) + 
+  scale_shape_manual(values = c(16, 17)) +  # Use different shapes for the 'match' variable (e.g., circle and triangle)
+  scale_colour_manual(values = c("black", "grey")) +  # Black and white colours (if using colour)
+  labs(x = "Word Type", y = "Reaction Time (ms)", shape = "Congruency", col = "Congruency") +  # Update legend title to "Congruency"
+  coord_cartesian(ylim = c(200, 1400))  # Set y-axis limit
+
+ggplot(temp, aes(x = word, y = rt, shape = factor(match), col = factor(match))) +  
+  stat_summary(fun = mean, geom = "point", size = 3) +  # Plot means  
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = 0.2) +  # Add bootstrapped CIs  
+  theme_classic() +  
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),  
+    axis.title.x = element_text(face = "bold"),  
+    axis.title.y = element_text(face = "bold"),  
+    text = element_text(family = "Times New Roman"),  
+    legend.title = element_text(face = "bold"),  
+    legend.text = element_text(size = 10),  
+    legend.background = element_rect(fill = "white", color = "black"),  
+    legend.box = "horizontal"  
+  ) +  
+  scale_shape_manual(values = c(16, 17)) +  # Ensure shape values align with factor levels  
+  scale_colour_manual(values = c("black", "grey")) +  
+  labs(
+    x = "Word Type", 
+    y = "Reaction Time (ms)", 
+    col = "Congruency", 
+    shape = "Congruency"
+  ) +  
+  coord_cartesian(ylim = c(725, 875))  # Set y-axis limit  
+library(ggplot2)
+
+ggplot(temp, aes(x = word, y = corr, shape = factor(match), col = factor(match))) +  
+  stat_summary(fun = mean, geom = "point", size = 3) +  # Plot means  
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = 0.2) +  # Add bootstrapped CIs  
+  theme_classic() +  
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),  
+    axis.title.x = element_text(face = "bold"),  
+    axis.title.y = element_text(face = "bold"),  
+    text = element_text(family = "Times New Roman"),  
+    legend.title = element_text(face = "bold"),  
+    legend.text = element_text(size = 10),  
+    legend.background = element_rect(fill = "white", color = "black"),  
+    legend.box = "horizontal"  
+  ) +  
+  scale_shape_manual(values = c(16, 17)) +  # Ensure shape values align with factor levels  
+  scale_colour_manual(values = c("black", "grey")) +  
+  labs(
+    x = "Word Type", 
+    y = "Accuracy", 
+    col = "Congruency", 
+    shape = "Congruency"
+  ) +  
+  coord_cartesian(ylim = c(0.75, 1))  # Set y-axis limit  
+
+temp <- lf[lf$exp=="e3",]
+# Ensure factors
+temp$word <- as.factor(temp$word)
+temp$match <- as.factor(temp$match)
+
+# Run two-way ANOVA
+anova_result <- aov(rt ~ word * match, data = temp)
+
+# Print ANOVA summary
+summary(anova_result)
+library(report)
+report(anova_result)
+
+# Calculate means and standard deviations for each condition
+library(dplyr)
+
+# Group by word type and match, then summarize to get mean and SD
+summary_stats <- temp %>%
+  group_by(word) %>%
+  summarise(
+    mean_rt = sprintf("%.2f", mean(rt, na.rm = TRUE)),  # Force rounding to 2 decimal places
+    sd_rt = sprintf("%.2f", sd(rt, na.rm = TRUE)),      # Force rounding to 2 decimal places
+    .groups = 'drop'                    # Drop grouping after summarizing
+  )
+
+# Print the summary statistics
+print(summary_stats)
+
+
+# Calculate means and standard deviations for each pairing (combining match and mismatch)
+pairing_stats <- temp %>%
+  group_by(word) %>%
+  summarise(
+    mean_corr = sprintf("%.3f", mean(corr, na.rm = TRUE)),  # Force rounding to 2 decimal places
+    sd_corr = sprintf("%.3f", sd(corr, na.rm = TRUE)),      # Force rounding to 2 decimal places
+    .groups = 'drop'                                    # Drop grouping after summarizing
+  )
+
+# Print the summary statistics for pairings
+print(pairing_stats)
+
+
+
+posthoc_results <- TukeyHSD(anova_result, "word:match")
+print(posthoc_results)
+
+# Extract Q-values from Tukey's HSD output
+q_values <- posthoc_results$`word:match`[, "diff"] / posthoc_results$`word:match`[, "lwr"]
+q_values
+
+
+library(emmeans)
+
+
+
+# Run two-way ANOVA
+anova_result <- aov(rt ~ word * match, data = temp)
+
+# Print ANOVA summary
+summary(anova_result)
+library(report)
+report(anova_result)
+
+posthoc_results <- TukeyHSD(anova_result, "word:match")
+print(posthoc_results)
+
+
+ggplot(temp, aes(x = word, y = rt, shape = factor(match), col = factor(match))) +  
+  stat_summary(fun = mean, geom = "point", size = 3) +  # Plot means  
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = 0.2) +  # Add bootstrapped CIs  
+  theme_classic() +  
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),  
+    axis.title.x = element_text(face = "bold"),  
+    axis.title.y = element_text(face = "bold"),  
+    text = element_text(family = "Times New Roman"),  
+    legend.title = element_text(face = "bold"),  
+    legend.text = element_text(size = 10),  
+    legend.background = element_rect(fill = "white", color = "black"),  
+    legend.box = "horizontal"  
+  ) +  
+  scale_shape_manual(values = c(16, 17)) +  # Ensure shape values align with factor levels  
+  scale_colour_manual(values = c("black", "grey")) +  
+  labs(
+    x = "Word Type", 
+    y = "Reaction Time (ms)", 
+    col = "Congruency", 
+    shape = "Congruency"
+  ) +  
+  coord_cartesian(ylim = c(700, 900))  # Set y-axis limit  
+
+
+
+ggplot(temp, aes(x = word, y = corr, shape = match)) +  # Use shape instead of colour
+  geom_boxplot() +
+  stat_summary() +  # Statistical summary (e.g., mean with CI)
+  theme_classic() +  # Use a classic theme
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),  # Rotate x-axis text
+    axis.title.x = element_text(face = "bold"),  # Bold the X-axis label
+    axis.title.y = element_text(face = "bold"),  # Bold the Y-axis label
+    text = element_text(family = "Times New Roman"),  # Set font to Times New Roman
+    legend.title = element_text(face = "bold"),  # Bold the legend title
+    legend.text = element_text(size = 10),  # Adjust legend text size
+    legend.background = element_rect(fill = "white", color = "black"),  # Box around legend
+    legend.box = "horizontal"  # Horizontal box around the legend (can use "vertical" as well)
+  ) + 
+  scale_shape_manual(values = c(16, 17)) +  # Use different shapes for the 'match' variable (e.g., circle and triangle)
+  scale_colour_manual(values = c("black", "white")) +  # Black and white colours (if using colour)
+  labs(x = "Word Type", y = "Accuracy", shape = "Congruency") +  # Update legend title to "Congruency"
+  coord_cartesian(ylim = c(0.75,1))  # Set y-axis limit
+
+
+ggplot2::ggplot(lf, aes(x=word,y=rt,col=match)) + 
+  stat_summary() + facet_grid(. ~ exp) +
+  theme_classic() + theme(axis.text.x = element_text(angle=30,hjust=1))
+
+# # ## # ## # ## # ## # ## # #
+# # # Final Results 2025 # # #
+# # ## # ## # ## # ## # ## # #
+
+if (!require(lmerTest)) {install.packages("lmerTest")}; library(lmerTest)
+
+# Get Experiment 1 data
+temp <- lf[lf$exp=="e1"]
+
+# Ensure newBlock is an integer
+temp$newBlock <- as.integer(temp$newBlock)
+
+# Model for Accuracy
+m_e1_co <- glmer(corr ~ bddq * word * newBlock * match + (newBlock|partId),
+                 family = binomial, data = temp,
+                 control= glmerControl(optimizer = "bobyqa"))
+summary(m_e1_co)
+step(m_e1_co)
+library(report)
+report(m_e1_co)
+
+# Explore early learning
+temp <- lf[lf$exp=="e1" & lf$newBlock == 1,]
+m_e1_b1_co <- glmer(corr ~ bddq * word * match + (1|partId),
+                    family = binomial, data = temp,
+                    control= glmerControl(optimizer = "bobyqa"))
+summary(m_e1_b1_co)
+
+# Model for Reaction Time
+m_e1_rt <- lmer(rt ~ bddq * word * newBlock * match + (newBlock|partId),
+                REML = F, data = temp,
+                control= lmerControl(optimizer = "bobyqa"))
+summary(m_e1_rt)
+step(m_e1_rt)
+
+# DEPRESSION
+m_e1_co_phq <- glmer(corr ~ phq * word * newBlock * match + (newBlock|partId),
+                     family = binomial, data = temp,
+                     control= glmerControl(optimizer = "bobyqa"))
+summary(m_e1_co_phq)
+
+# Get Experiment 3 data - termed Experiment 2 in the paper
+temp <- lf[lf$exp=="e3"]
+
+# Model for Accuracy
+m_e3_co <- glmer(corr ~ bddq * word * newBlock * match + (newBlock|partId),
+                 family = binomial, data = temp,
+                 control= glmerControl(optimizer = "bobyqa"))
+summary(m_e3_co)
+step(m_e3_co)
+library(report)
+report(m_e3_co)
+
+# Explore early learning
+temp <- lf[lf$exp=="e3" & lf$newBlock == 1,]
+m_e3_b1_co <- glmer(corr ~ bddq * word * match + (1|partId),
+                    family = binomial, data = temp,
+                    control= glmerControl(optimizer = "bobyqa"))
+summary(m_e3_b1_co)
+
+# Model for Reaction Time
+m_e3_rt <- lmer(rt ~ bddq * word * newBlock * match + (newBlock|partId),
+                REML = F, data = temp,
+                control= lmerControl(optimizer = "bobyqa"))
+summary(m_e3_rt)
+step(m_e3_rt)
+
+# DEPRESSION - accuracy model
+m_e3_co_phq <- glmer(corr ~ phq * word * newBlock * match + (newBlock|partId),
+                     family = binomial, data = temp,
+                     control= glmerControl(optimizer = "bobyqa"))
+summary(m_e3_co_phq)
+
+# IMPULSIVITY - reaction time model
+m_e3_rt_bis <- lmer(rt ~ bis * word * newBlock * match + (newBlock|partId),
+                    REML = F, data = temp,
+                    control= lmerControl(optimizer = "bobyqa"))
+summary(m_e3_rt_bis)
+step(m_e3_rt_bis)
+
