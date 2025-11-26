@@ -120,10 +120,15 @@ temp <- lf[lf$exp=="e1",]
 
 # # # Main Self-Prioritisation effect E1 # # #
 # model
-m <- glmer(corr ~ word * match + (1|partId), family = binomial, temp)
-summary(m)
-# effect size
-tm <- report_table(m)
+m1 <- glmer(corr ~ word * match + (1|partId), family = binomial, temp)
+summary(m1)
+# does the results are affected by the you-shape counterbalance?
+# fit a model that includes the factor selfShape
+m0 <- glmer(corr ~ word * match + selfShape + (1|partId), family = binomial, temp)
+# compare the 
+anova(m1, m0)
+# compute the effect size of the regular model (m)
+tm1 <- report_table(m1)
 
 
 # # # # accuracy E1 bddq # # # #
@@ -190,11 +195,12 @@ temp <- lf[lf$exp=="e1",]
 
 # # # Main Self-Prioritisation effect E1 # # #
 # model
-m <- lmer(rt ~ word * match+ (1|partId), REML = F, temp)
-# anova
-summary(m)
-# effect size
-report_table(m)
+m1 <- lmer(rt ~ word * match + (1|partId), REML = F, temp)
+summary(m1)
+m0 <- lmer(rt ~ word * match + selfShape + (1|partId), REML = F, temp)
+anova(m1, m0)
+# compute the effect size of the regular model (m)
+tm1 <- report_table(m1)
 
 # # # # RT E1 bddq # # # #
 (fig5 <- ggplot(temp, aes(x = bddq, y = rt, linetype = word)) + 
@@ -264,12 +270,14 @@ temp <- lf[lf$exp=="e2",]
   coord_cartesian(ylim = c(0.75, 1)))  # Set y-axis limit  
 
 
-# # # Main Self-Prioritisation effect E2 # # #
+# # # Main Self-Prioritisation effect E1 # # #
 # model
-m <- glmer(corr ~ word * match + (1|partId), family = binomial, temp)
-summary(m)
-# effect size
-report_table(m)
+m1 <- glmer(corr ~ word * match + (1|partId), family = binomial, temp)
+summary(m1)
+m0 <- glmer(corr ~ word * match + selfShape + (1|partId), family = binomial, temp)
+anova(m1, m0)
+# compute the effect size of the regular model (m)
+tm1 <- report_table(m1)
 
 
 # # # # accuracy E2 bddq # # # #
@@ -334,11 +342,12 @@ temp <- lf[lf$exp=="e2",]
 
 # # # Main Self-Prioritisation effect E2 # # #
 # model
-m <- lmer(rt ~ word * match+ (1|partId), REML = F, temp)
-# anova
-summary(m)
-# effect size
-report_table(m)
+m1 <- lmer(rt ~ word * match + (1|partId), REML = F, temp)
+summary(m1)
+m0 <- lmer(rt ~ word * match + selfShape + (1|partId), REML = F, temp)
+anova(m1, m0)
+# compute the effect size of the regular model (m)
+tm1 <- report_table(m1)
 
 # # # # RT E2 bddq # # # #
 (fig9 <- ggplot(temp, aes(x = bddq, y = rt, linetype = word)) + 
@@ -511,6 +520,7 @@ tmp <- wf[wf$exp == "e2",]
 report::report_table(cor.test(tmp$pairing_duration, tmp$bddq))
 
 
+
 # # # ## # # ## # # ## # # ## # # # # # # ## # # ##
 # # # # TYPES OF YOU-MISMATCH # # # # # # ## # # ## 
 # # # ## # # ## # # ## # # ## # # # # # # ## # # ## 
@@ -540,20 +550,30 @@ for (i in 1:length(unique(lf$partId))) {
 summary(lmer(rt ~ mismatchtype + (1|exp/partId), REML = F, lf2))
 summary(lmer(rt ~ mismatchtype + (1|partId), REML = F, lf2[lf2$exp=="e1",]))
 summary(lmer(rt ~ mismatchtype + (1|partId), REML = F, lf2[lf2$exp=="e2",]))
-figS1a <- ggplot2::ggplot(lf2, aes(x=mismatchtype,y=rt)) +
+(figS1a <- ggplot2::ggplot(lf2, aes(x=mismatchtype,y=rt)) +
   labs(title = "You trials mismatches", y="Reaction Time (ms)",
        x="Type of Missmatch for You") + #geom_boxplot() +
   stat_summary() + facet_grid(. ~ exp) +
-  theme_classic() + theme(axis.text.x = element_text(angle=30,hjust=1))
+  theme_classic() + theme(axis.text.x = element_text(angle=30,hjust=1)))
 
 # Accuracy (correct)
 summary(glmer(corr ~ mismatchtype + (1|exp/partId), family = binomial, lf2))
 summary(glmer(corr ~ mismatchtype + (1|partId), family = binomial, lf2[lf2$exp=="e1",]))
 summary(glmer(corr ~ mismatchtype + (1|partId), family = binomial, lf2[lf2$exp=="e2",]))
-figS1b <- ggplot2::ggplot(lf2, aes(x=mismatchtype,y=corr*100)) +
+(figS1b <- ggplot2::ggplot(lf2, aes(x=mismatchtype,y=corr*100)) +
   labs(title = "You trials mismatches", y="Accuract (%)",
        x="Type of Missmatch for You") + #geom_boxplot() +
   stat_summary() + facet_grid(. ~ exp) +
-  theme_classic() + theme(axis.text.x = element_text(angle=30,hjust=1))
+  theme_classic() + theme(axis.text.x = element_text(angle=30,hjust=1)))
+
+summary(glmer(corr ~ mismatchtype*bddq + (1|exp/partId), family = binomial, lf2))
+summary(glmer(corr ~ mismatchtype*bddq + (1|partId), family = binomial, lf2[lf2$exp=="e1",]))
+summary(glmer(corr ~ mismatchtype*bddq + (1|partId), family = binomial, lf2[lf2$exp=="e2",]))
+(fig <- ggplot2::ggplot(lf2, aes(x=bddq,y=corr*100,col=mismatchtype)) +
+    labs(title = "You trials mismatches", y="Accuract (%)",
+         x="BDDQ", col="Type of\n Missmatch\n for You") + #geom_boxplot() +
+    geom_smooth(method="lm", se=F) +
+    stat_summary() + facet_grid(. ~ exp) +
+    theme_classic() + theme(axis.text.x = element_text(angle=30,hjust=1)))
 
 ggarrange(figS1a, figS1b, nrow=2)
