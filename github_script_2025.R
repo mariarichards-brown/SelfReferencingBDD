@@ -1,9 +1,10 @@
 # remove everything
 rm(list=ls())
 # call our functions
-source("functions_v2.R")
+source("functions_v3.R")
 
 if (!require(ggplot2)) {install.packages("ggplot2")}; library(ggplot2)
+if (!require(ggpubr)) {install.packages("ggpubr")}; library(ggpubr)
 if (!require(lmerTest)) {install.packages("lmerTest")}; library(lmerTest)
 if (!require(effectsize)) {install.packages("effectsize")}; library(effectsize)
 options(es.use_symbols = TRUE) # get nice symbols when printing! (On Windows, requires R >= 4.2.0)
@@ -33,7 +34,7 @@ relCols <- c("exp", "partId","age","sex","bddq","phq","bis","gad","pairing_durat
 wf <- rbind(e1_wf[,relCols],e2_wf[,relCols])
 
 # add questionnaires to long format
-lf <- addQuestionnairesToLF(lf,wf)
+lf <- addQuestionnairesToLF(lf, wf)
 
 # word factor in desired order
 lf$word <- factor(lf$word, levels = c("You","Friend","Stranger"))
@@ -116,6 +117,7 @@ temp <- lf[lf$exp=="e1",]
     ) +  
     coord_cartesian(ylim = c(0.75, 1)))  # Set y-axis limit
 
+
 # # # Main Self-Prioritisation effect E1 # # #
 # model
 m <- glmer(corr ~ word * match + (1|partId), family = binomial, temp)
@@ -157,6 +159,8 @@ m_e1_b1_co <- glmer(corr ~ bddq * word * match + (1|partId),
                     control= glmerControl(optimizer = "bobyqa")) 
 summary(m_e1_b1_co)
 
+
+
 # # # # reaction time E1 # # # #
 temp <- lf[lf$exp=="e1",]
 (fig4 <- ggplot(temp, aes(x = word, y = rt, shape = factor(match), col = factor(match))) +  
@@ -182,6 +186,7 @@ temp <- lf[lf$exp=="e1",]
       shape = "Congruency"
     ) +  
     coord_cartesian(ylim = c(725, 875)))  # Set y-axis limit  
+
 
 # # # Main Self-Prioritisation effect E1 # # #
 # model
@@ -227,6 +232,7 @@ m_e1_b1_rt <- lmer(rt ~ bddq * word * match + (1|partId),
 summary(m_e1_b1_rt)
 
 
+
 # # # # # Experiment 2 # # # # # # # # # # # # # # # # # # # # # # # # # # #### 
 
 # data for experiment 2
@@ -256,6 +262,7 @@ temp <- lf[lf$exp=="e2",]
     shape = "Congruency"
   ) +  
   coord_cartesian(ylim = c(0.75, 1)))  # Set y-axis limit  
+
 
 # # # Main Self-Prioritisation effect E2 # # #
 # model
@@ -324,6 +331,7 @@ temp <- lf[lf$exp=="e2",]
   ) +  
   coord_cartesian(ylim = c(725, 875)))  # Set y-axis limit  
 
+
 # # # Main Self-Prioritisation effect E2 # # #
 # model
 m <- lmer(rt ~ word * match+ (1|partId), REML = F, temp)
@@ -367,9 +375,11 @@ m_e2_b1_rt <- lmer(rt ~ bddq * word * match + (1|partId),
                    control= lmerControl(optimizer = "bobyqa")) 
 summary(m_e2_b1_rt)
 
-# # # ## # # ## # # #
-# # # # PHQ E2 # # # #
-# # # ## # # ## # # #
+
+
+# # # # # # # # # # # # # #
+# # # # # PHQ E2 # # # # #
+# # # # # # # # # # # # # #
 
 # # # # Accuracy PHQ E2 # # # #
 temp <- lf[lf$exp=="e2",]
@@ -406,6 +416,8 @@ summary(m_e2_rt_phq_step)
 report(m_e2_rt_phq_step) 
 step(m_e2_rt_phq_step) 
 
+
+
 # # # # Accuracy PHQ E2 # # # #
 temp <- lf[lf$exp=="e2",]
 m_e2_co_phq <- glmer(corr ~ phq * word * newBlock * match + (newBlock|partId), 
@@ -413,15 +425,19 @@ m_e2_co_phq <- glmer(corr ~ phq * word * newBlock * match + (newBlock|partId),
                      control= glmerControl(optimizer = "bobyqa")) 
 summary(m_e2_co_phq)
 
+
 # # # PHQ Accuracy and block 1 E2 (if main effect of block) # # #
 temp <- lf[lf$exp=="e2" & lf$newBlock == 1,] 
 m_e2_b1_co_phq <- glmer(corr ~ phq * word * match + (1|partId), 
                         family = binomial, data = temp, 
                         control= glmerControl(optimizer = "bobyqa")) 
+summary(m_e2_b1_co_phq)
 
-# # # ## # # ## # # #
-# # # # SEX E2 # # # #
-# # # ## # # ## # # #
+
+
+# # # # # # # # # # # # # #
+# # # # # SEX E2 # # # # #
+# # # # # # # # # # # # # #
 
 # # # # Accuracy Sex E2 # # # #
 temp <- lf[lf$exp=="e2",]
@@ -451,9 +467,10 @@ m_e2_b1_rt_sex <- lmer(rt ~ sex * word * match + (1|partId),
 summary(m_e2_b1_rt_sex)
 
 
-# # # ## # # ## # # #
-# # # # BIS E2 # # # #
-# # # ## # # ## # # #
+
+# # # # # # # # # # # # # #
+# # # # # BIS E2 # # # # #
+# # # # # # # # # # # # # #
 
 # # # # Accuracy Bis E2 # # # #
 temp <- lf[lf$exp=="e2",]
@@ -482,14 +499,61 @@ m_e2_b1_rt_bis <- lmer(rt ~ bis * word * match + (1|partId),
                        control= lmerControl(optimizer = "bobyqa")) 
 summary(m_e2_b1_rt_bis)
 
-# # # ## # # ## # # ## # # ## # # # # # # ## # # #
-# # # # DURATION SPENT ON PAIRINGS SCREEN HERE # # 
-# # # ## # # ## # # ## # # ## # # ## # # ## # # ## 
 
-# # # ## # # ## # # ## # # ## # # # # # # ## # # #
-# # # # TYPES OF YOU-MISMATCH ACCURACY  # # # # ## 
-# # # ## # # ## # # ## # # ## # # ## # # ## # # ## 
 
-# # # ## # # ## # # ## # # ## # # # # # # ## # # #
-# # # # TYPES OF YOU-MISMATCH RT  # # # # ## # # ## 
+# # # ## # # ## # # ## # # ## # # ## # # ## # # ##
+# # # # DURATION SPENT ON PAIRINGS SCREEN## # # ##
 # # # ## # # ## # # ## # # ## # # ## # # ## # # ## 
+tmp <- wf[wf$exp == "e1",] 
+report::report_table(cor.test(tmp$pairing_duration, tmp$bddq))
+
+tmp <- wf[wf$exp == "e2",]
+report::report_table(cor.test(tmp$pairing_duration, tmp$bddq))
+
+
+# # # ## # # ## # # ## # # ## # # # # # # ## # # ##
+# # # # TYPES OF YOU-MISMATCH # # # # # # ## # # ## 
+# # # ## # # ## # # ## # # ## # # # # # # ## # # ## 
+
+# different types of mismatches
+for (i in 1:length(unique(lf$partId))) {
+  tmp <- lf[lf$partId==unique(lf$partId)[i],]
+  tmp2 <- tmp[tmp$match == "Match ",]
+  tmp2 <- tmp2[tmp2$word != "You",]
+  friend_shape <- tmp2$shape[tmp2$word == "Friend"][1]
+  stranger_shape <- tmp2$shape[tmp2$word == "Stranger"][1]
+
+  tmp3 <- tmp[tmp$match == "Mismatch ",]
+  tmp4 <- tmp3[tmp3$word != "You",]
+  tmp3 <- tmp3[tmp3$word == "You",]
+
+  tmp3$mismatchtype <- ifelse(tmp3$shape==friend_shape,"friend",
+                              ifelse(tmp3$shape==stranger_shape,"stranger",NA))
+  if (i == 1) {
+    lf2 <- tmp3
+  } else {
+    lf2 <- rbind(tmp3,lf2)
+  }
+}
+
+# Reaction Time (RT)
+summary(lmer(rt ~ mismatchtype + (1|exp/partId), REML = F, lf2))
+summary(lmer(rt ~ mismatchtype + (1|partId), REML = F, lf2[lf2$exp=="e1",]))
+summary(lmer(rt ~ mismatchtype + (1|partId), REML = F, lf2[lf2$exp=="e2",]))
+figS1a <- ggplot2::ggplot(lf2, aes(x=mismatchtype,y=rt)) +
+  labs(title = "You trials mismatches", y="Reaction Time (ms)",
+       x="Type of Missmatch for You") + #geom_boxplot() +
+  stat_summary() + facet_grid(. ~ exp) +
+  theme_classic() + theme(axis.text.x = element_text(angle=30,hjust=1))
+
+# Accuracy (correct)
+summary(glmer(corr ~ mismatchtype + (1|exp/partId), family = binomial, lf2))
+summary(glmer(corr ~ mismatchtype + (1|partId), family = binomial, lf2[lf2$exp=="e1",]))
+summary(glmer(corr ~ mismatchtype + (1|partId), family = binomial, lf2[lf2$exp=="e2",]))
+figS1b <- ggplot2::ggplot(lf2, aes(x=mismatchtype,y=corr*100)) +
+  labs(title = "You trials mismatches", y="Accuract (%)",
+       x="Type of Missmatch for You") + #geom_boxplot() +
+  stat_summary() + facet_grid(. ~ exp) +
+  theme_classic() + theme(axis.text.x = element_text(angle=30,hjust=1))
+
+ggarrange(figS1a, figS1b, nrow=2)
