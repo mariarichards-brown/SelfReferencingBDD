@@ -7,6 +7,7 @@ if (!require(ggplot2)) {install.packages("ggplot2")}; library(ggplot2)
 if (!require(ggpubr)) {install.packages("ggpubr")}; library(ggpubr)
 if (!require(lmerTest)) {install.packages("lmerTest")}; library(lmerTest)
 if (!require(effectsize)) {install.packages("effectsize")}; library(effectsize)
+if (!require(report)) {install.packages("report")}; library(report)
 options(es.use_symbols = TRUE) # get nice symbols when printing! (On Windows, requires R >= 4.2.0)
 if (!require(dplyr)) {install.packages("dplyr")}; library(dplyr)
 
@@ -163,7 +164,9 @@ m_e1_b1_co <- glmer(corr ~ bddq * word * match + (1|partId),
                     family = binomial, data = temp, 
                     control= glmerControl(optimizer = "bobyqa")) 
 summary(m_e1_b1_co)
-
+# see here (22/01/2025)
+ggplot(temp, aes(x = bddq, y = corr, col = word)) + 
+  stat_smooth(method = "lm", se = TRUE) + stat_cor()
 
 
 # # # # reaction time E1 # # # #
